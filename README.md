@@ -28,6 +28,9 @@ View connected devices, monitor signal quality, and control your network directl
 - **Signal Strength** - Current cellular connection strength
 - **Data Traffic** - Monitor data sent and received
 
+<p align="center"><img width="400px" alt="Device list" class="recess" src="./images/device list.png" /></p>
+
+
 ### Flow Cards
 
 #### Triggers
