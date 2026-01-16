@@ -59,11 +59,6 @@ View connected devices, monitor signal quality, and control your network directl
 3. Search for "Zyxel NR5307"
 4. Click "Install"
 
-### Manual Installation (Development)
-1. Clone this repository
-2. Run `npm install`
-3. Run `homey app install` (requires Homey CLI)
-
 ## Setup
 
 1. Add the app from the Homey app store
