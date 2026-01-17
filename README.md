@@ -174,6 +174,9 @@ Created for the Homey Pro community
 
 ## Support
 
+Having issues? Check the [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions to common problems.
+
+For additional help, please [open an issue](https://github.com/Rob2011/Homey.Zyxel.Router/issues).
 For issues, questions, or feature requests, please open an issue on GitHub.
 
 ## Acknowledgments
