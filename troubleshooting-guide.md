@@ -1,360 +1,208 @@
-# Troubleshooting Guide - Zyxel NR5307 Homey App
+# Troubleshooting Guide - Zyxel Router App for Homey
 
-This guide helps you resolve common issues with the Zyxel NR5307 router app for Homey Pro.
+This guide helps you fix common issues with the Zyxel Router app (Zyxel NR5307) for Homey Pro.
 
 ## Table of Contents
-- [Connection Failed Error](#connection-failed-error)
-- [Cannot Connect to Router](#cannot-connect-to-router)
-- [Authentication Issues](#authentication-issues)
-- [Device List Problems](#device-list-problems)
-- [Signal Quality Not Updating](#signal-quality-not-updating)
-- [Advanced Debugging](#advanced-debugging)
+- [Pairing fails: "Could not connect to the router"](#pairing-fails-could-not-connect-to-the-router)
+- [Device shows "Cannot connect to router"](#device-shows-cannot-connect-to-router)
+- [Logged out of the router's web interface](#logged-out-of-the-routers-web-interface)
+- [Connected devices](#connected-devices)
+- [Signal, 5G and bands](#signal-5g-and-bands)
+- [Data usage and bandwidth](#data-usage-and-bandwidth)
+- [Latency](#latency)
+- [WiFi shows "Off"](#wifi-shows-off)
+- [Reboot](#reboot)
+- [Reading the logs](#reading-the-logs)
+- [Reporting issues](#reporting-issues)
 
 ---
 
-## Connection Failed Error
+## Pairing fails: "Could not connect to the router"
 
-**Error Message**: "Connection failed: Failed to connect to router. Please check IP address and credentials."
+**Message**: "Could not connect to the router. Please check the IP address and credentials."
 
-### Step 1: Verify Router IP Address
+The app logs in to the router before it adds the device. This message means that login failed.
 
-1. Open a web browser on any device connected to your network
-2. Try to access your router at: `https://192.168.1.1` (or your router's IP)
-3. If you see a login page, the IP is correct
-4. If you get a timeout or "cannot reach" error, the IP is wrong
+### Step 1: Check the IP address
+1. In a browser on the same network, open `https://192.168.8.1` (the NR5307 default; use your router's IP if you changed it)
+2. Your browser warns about the certificate. That is normal: the router uses a self-signed certificate. Accept the warning and continue.
+3. If you see the login page, the IP address is correct
 
-**Find your router's IP:**
-- Check the label on the router (usually on the back/bottom)
-- Common Zyxel router IPs: `192.168.1.1`, `192.168.0.1`, `10.0.0.1`
-- Check your computer's network settings to see the default gateway
+**Finding your router's IP**: it is the *default gateway* in your computer's or phone's network settings, or check the label on the router.
 
-### Step 2: Test Router Connection from Homey's Network
+### Step 2: Check the username and password
+1. Log in to the router's web interface with the same details
+2. The username is usually `admin` (lowercase). The password is the admin password you set, or the one printed on the router's label.
+3. Username and password are case-sensitive; watch out for extra spaces when pasting
 
-1. Make sure Homey Pro is on the same network as the router
-2. Check if there are multiple networks (e.g., guest WiFi) that might isolate devices
-3. Ensure no firewall is blocking Homey from accessing the router
+If the browser login works but pairing doesn't, see [Reading the logs](#reading-the-logs).
 
-### Step 3: Verify Credentials
-
-1. Open your router's web interface: `https://[router-ip]`
-2. Try logging in with the credentials you entered in the Homey app
-3. Default credentials are usually:
-   - Username: `admin`
-   - Password: `1234` or printed on router label
-
-**Important**: 
-- Username and password are **case-sensitive**
-- Make sure there are no extra spaces
-- If you changed the password, use the new one
-
-### Step 4: Check HTTPS Access
-
-The router requires HTTPS (secure connection). If you see certificate warnings in your browser, that's normal - just accept and continue.
+### Step 3: Same network
+- Homey and the router must be on the same network. Homey's IP should start with the same three numbers, e.g. `192.168.8.x`.
+- A guest network or VLAN with client isolation can block Homey from reaching the router
 
 ---
 
-## Cannot Connect to Router
+## Device shows "Cannot connect to router"
 
-### Symptom
-App cannot reach the router at all, timeout errors.
+The device is marked unavailable when the router doesn't answer the status poll. It becomes available again by itself once the router answers.
 
-### Solutions
-
-#### Check Network Connectivity
-
-1. **Ping test from another device:**
-   ```bash
-   ping 192.168.1.1
-   ```
-   If this fails, there's a network problem.
-
-2. **Check Homey's network:**
-   - Open Homey settings → Network
-   - Verify Homey is connected to WiFi/Ethernet
-   - Check if Homey can access the internet
-
-3. **Router location:**
-   - Is the router between Homey and the internet?
-   - Check if both are on the same subnet (e.g., 192.168.1.x)
-
-#### Firewall Issues
-
-1. Check if your router has firewall rules blocking local access
-2. Some routers have "management access" settings - ensure LAN access is enabled
-3. Check if MAC filtering is enabled (whitelist Homey's MAC address)
-
-#### Router Issues
-
-1. **Reboot the router:**
-   - Unplug power for 30 seconds
-   - Plug back in and wait 2-3 minutes for full boot
-
-2. **Check router status lights:**
-   - Power: Should be solid
-   - Internet: Should be solid or blinking
-   - If lights are unusual, check router manual
+1. **Is the router reachable?** Open `https://[router-ip]` in a browser
+2. **Changed the password or IP?** Use **Repair** in the device settings and enter the new details. You don't need to remove the device, and your Flows keep working.
+3. **Router just restarted?** Give it 2–3 minutes after power-on
+4. **Router power-cycle**: unplug it for 30 seconds, plug it back in and wait 2–3 minutes
 
 ---
 
-## Authentication Issues
+## Logged out of the router's web interface
 
-### "Invalid username or password"
+The router allows **one admin session at a time**. While the app is polling, logging in to the web interface can log the app out, and the app's next login can then log *you* out.
 
-1. **Verify in browser first:**
-   - Open `https://[router-ip]` in a browser
-   - Log in with the same credentials
-   - If browser login fails, your credentials are wrong
-
-2. **Common issues:**
-   - Default username is `admin` (lowercase)
-   - Password might have been changed during setup
-   - Check for special characters that might be copied incorrectly
-
-3. **Reset router password (last resort):**
-   - Use the reset button on the router (hold 10-15 seconds)
-   - **WARNING**: This resets ALL settings, not just password
-   - You'll need to reconfigure the router
-
-### "Session validation failed"
-
-This means login worked but the session isn't valid:
-
-1. **Try again:** Sometimes transient network issues cause this
-2. **Clear and re-add device:** Remove the device from Homey and add it again
-3. **Router firmware:** Check if router firmware needs updating
+- The app logs back in automatically; nothing needs fixing
+- For a longer session in the web interface, temporarily disable the app (Homey → Apps → Zyxel Router → Disable), or raise the poll intervals
 
 ---
 
-## Device List Problems
+## Connected devices
 
-### No devices showing (0 active devices)
+### Number of devices looks wrong
+The router also keeps devices that were connected earlier. The app only counts devices the router marks as **active**. On the settings page, inactive devices are greyed out and marked *(Offline)*.
 
-#### Check Logs
+### List does not update
+1. Check **Devices - Poll Interval** in the device settings (default 120 seconds)
+2. Open the app's settings page and click **↻ Refresh**
+3. Restart the app: Homey → Apps → Zyxel Router → Restart
 
-1. Open Homey Developer Tools (if available) or check app logs
-2. Look for messages like:
-   ```
-   Device: MacBook Air, Active field value: true, active: true
-   Device list retrieved: 26 devices (26 active)
-   ```
-
-3. If you see `Active field value: undefined`, the router isn't returning active status
-
-#### Possible Causes
-
-1. **Router API difference:**
-   - Different firmware versions may use different field names
-   - Check GitHub issues for your specific router model/firmware
-
-2. **All devices offline:**
-   - Verify devices are actually connected (check router web interface)
-   - Try connecting a device and refreshing the list
-
-3. **API endpoint issue:**
-   - The app might need updating for your router's firmware version
-   - Report the issue on GitHub with your firmware version
-
-### Devices shown but all appear offline (greyed out)
-
-1. **Check API response format:**
-   - Open an issue on GitHub with logs
-   - Include your router's firmware version
-
-2. **Temporary workaround:**
-   - Use the router's web interface to view devices
-   - Export device list from settings page for reference
-
-### Device list not updating
-
-1. **Check polling interval:**
-   - Go to device settings
-   - Verify "Device Poll Interval" is not too high (60 seconds recommended)
-
-2. **Manual refresh:**
-   - Open device settings page
-   - Click "Refresh" button
-
-3. **Restart app:**
-   - Go to Homey Settings → Apps
-   - Find "Zyxel NR5307"
-   - Click restart
+### "Device connected / disconnected" Flows fire late
+These triggers fire on the next devices poll after a change, so with the default interval that can take up to 2 minutes. Triggers don't fire on the very first poll after the app starts.
 
 ---
 
-## Signal Quality Not Updating
+## Signal, 5G and bands
 
-### Symptom
-RSRP, RSRQ, RSSI, SINR values not changing or showing 0.
+### Values are empty or not changing
+1. Check that the router has an active cellular connection (router web interface)
+2. Check **Signal - Poll Interval** (default 60 seconds, minimum 10)
+3. In bridge mode, or when the router uses an Ethernet WAN instead of cellular, there is no signal data
 
-### Solutions
+### 5G RSRP / 5G SINR are empty
+These are only filled while a 5G NR carrier is active. On LTE only, they are empty, and **Network technology** shows `LTE`.
 
-1. **Check cellular connection:**
-   - Verify router has an active cellular connection
-   - Check router web interface for signal strength
-
-2. **Polling interval:**
-   - Go to device settings
-   - Check "Signal Poll Interval" (30 seconds recommended)
-   - Set to a lower value if needed (minimum: 10 seconds)
-
-3. **Router mode:**
-   - If router is in bridge mode or using WAN instead of cellular, signal data won't be available
-   - Verify router is using cellular/5G connection
+### Reading the values
+| Value | Meaning |
+|---|---|
+| Signal strength | LTE RSRP as %: −120 dBm = 0 %, −80 dBm = 100 % |
+| Network technology | e.g. `LTE`, `NR5G+` |
+| Active bands | LTE carriers / 5G bands, e.g. `B3+B7 / N78+N1` |
 
 ---
 
-## Advanced Debugging
+## Data usage and bandwidth
 
-### Enable Detailed Logging
+### Monthly usage restarted at 0 after updating to 1.2.0
+That is expected, and it happens only once. Before 1.2.0 the app measured the LAN interface instead of the internet (WAN) traffic, so the old count wasn't correct. From 1.2.0 the monthly counter restarts once from the current WAN reading.
 
-1. Open Homey CLI or Developer Tools
-2. Look for log entries with these symbols:
-   - `✓` = Success
-   - `→` = Request sent
-   - `←` = Response received
-   - `⚠` = Warning
+### Monthly usage differs from my provider
+- The app can only count while it runs. Traffic while Homey or the app is off is partly missed.
+- Set **Billing cycle reset day** to the day your provider's billing period starts
+- Use your provider's figures as the reference for billing
 
-### Common Log Messages
+### Bandwidth shows 0 or a low value
+Bandwidth is the **average** over the **Bandwidth - Poll Interval** (default 60 seconds), not a speed test. Short bursts are averaged out. After a router reboot, one sample is skipped.
 
-#### Successful Connection
+---
+
+## Latency
+
+Latency is measured **from Homey**, with a TCP connection to port 443 of the **Latency target** (default `1.1.1.1`). ICMP ping is not used because Odido blocks it.
+
+- If the target doesn't respond, the app tries `1.1.1.1` and `8.8.8.8`
+- If none respond, the value is not updated. Check Homey's internet connection.
+- Devices paired before 1.2.0 keep their old target `8.8.8.8`. You can change it in the device settings.
+
+---
+
+## WiFi shows "Off"
+
+The WiFi fields show **Off** when the router doesn't broadcast that network. A guest network counts as off while the main WiFi on the same band is off, even if the guest network itself is enabled in the router. This is common when you use separate access points (e.g. Ubiquiti) and the router's own WiFi is switched off.
+
+---
+
+## Reboot
+
+After the **Reboot** action, the device shows "Router is rebooting…" and polling pauses. After 60 seconds the app tries to log in every 30 seconds (up to 10 times), then polling resumes automatically.
+
+---
+
+## Reading the logs
+
+Open the app's logs via the Homey Developer Tools (https://tools.developer.homey.app) or with `homey app run` during development.
+
+### Normal operation
 ```
-→ Sending login request...
-← Login response status: 200
-← Received 1 cookie(s)
-✓ Session cookie found
-✓ Authentication successful!
+Signal updated — RSRP: -103 dBm, strength: 43%, NR5G+ [B3+B7 / N78+N1], 5G RSRP: -100 dBm
+Connected devices: 28 active of 42 known
+Router status updated
+Bandwidth — ↓ 4.3 Mbps  ↑ 0.0 Mbps (over 62s)
+Latency (TCP 1.1.1.1:443): 26 ms
 ```
 
-#### Connection Problem
-```
-⚠ Could not get basic info (trying alternate method)
-✗ Cannot reach router at 192.168.1.1
-```
+### Common errors
+| Log message | Meaning |
+|---|---|
+| `Invalid username or password` | The router rejected the login: check the credentials, then use Repair |
+| `Cannot connect to router at …` | Router not reachable over HTTPS: check the IP and the network |
+| `Update failed [signal]: …` | One poll failed. The app retries on the next interval. |
+| `Failed to get router status: …` | Status poll failed. The device is marked unavailable until the router answers again. |
+| `Request failed after 2 authentication retries` | The router keeps refusing the session. Often caused by someone being logged in to the web interface. |
+| `TCP connect to … failed, trying next target…` | Latency target unreachable. The next target is tried. |
 
-#### Authentication Problem
-```
-← Login response: ZCFG_INVALID_ARGUMENTS
-✗ Invalid username or password
-```
-
-### Test Connection Manually
-
-From a computer on the same network:
-
+### Test the router from a computer
 ```bash
-# Test if router is reachable
-curl -k https://192.168.1.1/getBasicInformation
-
-# Test login (replace with your credentials)
-curl -k -X POST https://192.168.1.1/UserLogin \
-  -H "Content-Type: application/json" \
-  -d '{"Input_Account":"admin","Input_Passwd":"[base64-password]","currLang":"en","RememberPassword":0,"SHA512_password":false}'
+curl -k https://192.168.8.1/getBasicInformation
 ```
-
-### Check Router Firmware
-
-1. Log into router web interface
-2. Go to Maintenance → Firmware
-3. Note your firmware version
-4. Check if an update is available
-5. Report firmware version when creating GitHub issues
-
-### Network Diagnostics
-
-1. **Check Homey's IP address:**
-   - Settings → Network
-   - Note IP and subnet (e.g., 192.168.1.50/24)
-
-2. **Verify same subnet:**
-   - Router: 192.168.1.1
-   - Homey: 192.168.1.x (should match first 3 numbers)
-   - If different, check network configuration
-
-3. **Test from Homey's location:**
-   - Use a laptop/phone in the same location as Homey
-   - Try accessing router web interface
-   - If that fails, it's a signal/range issue
+This needs no login. It returns the model and firmware version, e.g. `"ModelName":"NR5307"`. If it doesn't respond, the problem is the network, not the app.
 
 ---
 
-## Reporting Issues
+## Reporting issues
 
-If none of the above solutions work, please report the issue on GitHub with:
+If none of the above helps, [open an issue on GitHub](https://github.com/Rob2011/Homey.Zyxel.Router/issues) with:
 
-### Information to Include
-
-1. **Router details:**
-   - Model: Zyxel NR5307 (or variant)
-   - Firmware version: (from router web interface)
-   - Connection type: Cellular/Ethernet/Bridge mode
-
-2. **Network setup:**
-   - Router IP address: (e.g., 192.168.1.1)
-   - Homey IP address: (from Homey settings)
-   - Same network: Yes/No
-
-3. **Error details:**
-   - Exact error message
-   - When it occurs (during pairing, after X hours, etc.)
-   - Screenshot if possible
-
-4. **Logs:**
-   - Relevant log entries from Homey
-   - Any console output with the ✓ → ← symbols
-
-5. **What you've tried:**
-   - List troubleshooting steps already attempted
-   - Results of each attempt
-
-### Creating a GitHub Issue
-
-1. Go to: https://github.com/[your-repo]/issues
-2. Click "New Issue"
-3. Use template: "Connection Problem" or "Bug Report"
-4. Include all information from above
-5. Be as detailed as possible
+1. **Router**: model and firmware version (from `getBasicInformation` above or the web interface), and whether it uses cellular or Ethernet WAN
+2. **App version** (Homey → Apps → Zyxel Router)
+3. **Network**: router IP, Homey IP
+4. **Error**: the exact message, when it happens (pairing, after hours, after a reboot), and a screenshot if possible
+5. **Logs**: the relevant lines from the app log. **Remove passwords, IMEI and other personal data first.**
+6. **What you tried** and what happened
 
 ---
 
-## Quick Reference
+## Quick reference
 
-### Default Settings
-- Router IP: `192.168.1.1`
-- Username: `admin`
-- Password: (on router label, often `1234`)
-- Signal Poll: 30 seconds
-- Device Poll: 60 seconds
-- Status Poll: 300 seconds
+### Default settings
+| Setting | Default |
+|---|---|
+| IP address | `192.168.8.1` |
+| Username | `admin` |
+| Signal - Poll Interval | 60 s |
+| Devices - Poll Interval | 120 s |
+| Router Status - Poll Interval | 300 s |
+| Bandwidth - Poll Interval | 60 s |
+| Latency target | `1.1.1.1` |
+| Billing cycle reset day | 1 |
+| Monthly data limit (GB) | 0 (off) |
 
-### Common Issues Quick Fixes
-
-| Problem | Quick Fix |
-|---------|-----------|
-| Cannot connect | Verify IP, check network |
-| Wrong password | Try default: `admin` / `1234` |
-| Devices not updating | Check polling interval |
-| Signal at 0 | Verify cellular connection active |
-| Connection drops | Increase polling intervals |
-
-### Support Resources
-
-- **GitHub Issues**: Report bugs and get help
-- **Homey Community Forum**: Ask questions, share experiences
-- **Router Manual**: For router-specific settings
-- **Homey Developer Tools**: For detailed logging
+### Quick fixes
+| Problem | Quick fix |
+|---|---|
+| Cannot pair | Check IP/credentials in a browser first |
+| Password changed | Device settings → Repair |
+| Logged out of web interface | Expected (one admin session); disable the app temporarily |
+| Devices not updating | Check the poll interval, click Refresh on the settings page |
+| 5G values empty | No 5G carrier active at that moment |
+| Monthly usage reset after update | One-time switch to WAN counters in 1.2.0 |
 
 ---
 
-## Prevention Tips
-
-1. **Use static IP for router:** Prevents IP changes
-2. **Document your credentials:** Store securely
-3. **Keep firmware updated:** Both router and Homey
-4. **Monitor logs periodically:** Catch issues early
-5. **Test after changes:** Verify still working after network changes
-
----
-
-**Last Updated**: Version 1.0.0
-
-For more help, visit the GitHub repository or Homey Community Forum.
+**Last updated**: version 1.2.4
